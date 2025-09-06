@@ -437,7 +437,7 @@ export default function App() {
                 ))}
               </div>
 
-              <select value={rangeFilter} onChange={e => setRangeFilter(e.target.value)} className={`h-9 rounded-xl border border-slate-300/80 bg-white px-2 text-sm focus:outline-none ${ACCENT.ring} transition-all duration-200`}>
+              <select value={rangeFilter} onChange={e => setRangeFilter(e.target.value)} className={`h-9 rounded-xl border border-slate-300/80 bg-white px-2 pr-8 text-sm focus:outline-none ${ACCENT.ring} transition-all duration-200`}>
                 <option value="daily">Daily</option>
                 <option value="weekly">Weekly</option>
                 <option value="monthly">Monthly</option>
@@ -476,7 +476,7 @@ export default function App() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div className="grid gap-2">
                   <label className="text-sm font-medium text-slate-700">Estimate type</label>
-                  <select value={form.estimateType} onChange={e => setField("estimateType", e.target.value)} className={`h-11 rounded-2xl border border-slate-300/80 bg-white px-3 focus:outline-none ${ACCENT.ring4} transition-all duration-200`}>
+                  <select value={form.estimateType} onChange={e => setField("estimateType", e.target.value)} className={`h-11 rounded-2xl border border-slate-300/80 bg-white px-3 pr-10 focus:outline-none ${ACCENT.ring4} transition-all duration-200`}>
                     <option>Initial</option>
                     <option>Final</option>
                   </select>
@@ -484,7 +484,7 @@ export default function App() {
 
                 <div className="grid gap-2">
                   <label className="text-sm font-medium text-slate-700">Status</label>
-                  <select value={form.status} onChange={e => setField("status", e.target.value)} className={`h-11 rounded-2xl border border-slate-300/80 bg-white px-3 focus:outline-none ${ACCENT.ring4} transition-all duration-200`}>
+                  <select value={form.status} onChange={e => setField("status", e.target.value)} className={`h-11 rounded-2xl border border-slate-300/80 bg-white px-3 pr-10 focus:outline-none ${ACCENT.ring4} transition-all duration-200`}>
                     <option>Not Started</option>
                     <option>In Progress</option>
                     <option>Done</option>
@@ -725,7 +725,7 @@ export default function App() {
                             <select
                               value={item.status}
                               onChange={(e) => handleQueueStatusChange(item.id, e.target.value)}
-                              className="h-9 rounded-xl border border-slate-300/80 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-200"
+                              className="h-9 rounded-xl border border-slate-300/80 bg-white px-3 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-slate-200"
                             >
                               <option>Not Started</option>
                               <option>In Progress</option>
