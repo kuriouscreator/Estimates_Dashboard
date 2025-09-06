@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { setFaviconAccent } from "./utils/favicon";
+import { useEstimates } from "./hooks/useEstimates";
 
 // Quotes
 const QUOTES = [
@@ -168,29 +169,18 @@ export default function App() {
     try { localStorage.setItem("welcomeDismissed", "true"); } catch {}
   }
 
-  // Data
-  const [estimates, setEstimates] = useState(() => {
-    try { const raw = localStorage.getItem("estimates"); return raw ? JSON.parse(raw) : []; } catch { return []; }
-  });
-  useEffect(() => { try { localStorage.setItem("estimates", JSON.stringify(estimates)); } catch {} }, [estimates]);
-
-  // Seed on first run
-  useEffect(() => {
-    try {
-      const already = localStorage.getItem("autoSeeded");
-      if (!already) {
-        const today = new Date();
-        const y = toISODate(today);
-        const samples = [
-          { id: cryptoRandomId(), estimateType: 'Initial', claimNumber:'1001', clientName:'Acme Co', taskNumber:'T-01', dateReceived:y, timeReceived:'09:00', dateReturned:y, timeReturned:'11:00', finalAmount:'', status:'Done', billed:null },
-          { id: cryptoRandomId(), estimateType: 'Final', claimNumber:'1002', clientName:'Globex',  taskNumber:'T-02', dateReceived:y, timeReceived:'10:00', dateReturned:y, timeReturned:'14:00', finalAmount:'$250.00', status:'Done', billed:false },
-          { id: cryptoRandomId(), estimateType: 'Final', claimNumber:'1003', clientName:'Initech', taskNumber:'T-03', dateReceived:y, timeReceived:'08:00', dateReturned:'', timeReturned:'', finalAmount:'$100.00', status:'In Progress', billed:false },
-        ];
-        setEstimates(samples);
-        localStorage.setItem("autoSeeded", "true");
-      }
-    } catch {}
-  }, []);
+  // Data - using Supabase
+  const { 
+    estimates, 
+    loading, 
+    error, 
+    addEstimate, 
+    updateEstimate, 
+    deleteEstimate, 
+    markBilled, 
+    updateStatus, 
+    updateFinalAmount 
+  } = useEstimates();
 
   // Hidden manual seed
   useEffect(() => {
@@ -266,19 +256,25 @@ export default function App() {
     if (!Number.isNaN(num)) setField("finalAmount", num.toLocaleString(undefined, { style: "currency", currency: "USD" }));
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     if (!validate()) return;
+    
     const payload = {
-      id: cryptoRandomId(),
       ...form,
       finalAmountCents: form.finalAmount ? Math.round(Number(String(form.finalAmount).replace(/[^0-9.\\-]/g, "")) * 100) : 0,
       createdAtISO: new Date().toISOString(),
       billed: form.estimateType === "Final" ? false : null,
     };
-    setEstimates(prev => [payload, ...prev]);
-    setForm({ estimateType: "Initial", claimNumber: "", clientName: "", taskNumber: "", dateReceived: "", timeReceived: "", dateReturned: "", timeReturned: "", finalAmount: "", status: "Not Started" });
-    setErrors({});
+    
+    try {
+      await addEstimate(payload);
+      setForm({ estimateType: "Initial", claimNumber: "", clientName: "", taskNumber: "", dateReceived: "", timeReceived: "", dateReturned: "", timeReturned: "", finalAmount: "", status: "Not Started" });
+      setErrors({});
+    } catch (err) {
+      console.error('Failed to save estimate:', err);
+      setErrors({ submit: 'Failed to save estimate. Please try again.' });
+    }
   }
 
   function isWithinFilter(dateStr, filter, refDate = new Date()) {
@@ -296,30 +292,56 @@ export default function App() {
   const totalCount = initialCount + finalCount;
 
   const finalQueue = useMemo(() => estimates.filter(r => r.estimateType === "Final" && r.billed === false), [estimates]);
-  function markBilled(id) { setEstimates(prev => prev.map(r => (r.id === id ? { ...r, billed: true } : r))); }
+  
+  async function handleMarkBilled(id) { 
+    try {
+      await markBilled(id);
+    } catch (err) {
+      console.error('Failed to mark as billed:', err);
+    }
+  }
 
-  function deleteEstimate(id) {
+  async function handleDeleteEstimate(id) {
     if (window.confirm('Delete this estimate? This cannot be undone.')) {
-      setEstimates(prev => prev.filter(r => r.id !== id));
+      try {
+        await deleteEstimate(id);
+      } catch (err) {
+        console.error('Failed to delete estimate:', err);
+        alert('Failed to delete estimate. Please try again.');
+      }
     }
   }
 
   const workQueue = useMemo(() => estimates.filter(r => r.status === 'Not Started' || r.status === 'In Progress'), [estimates]);
-  function updateEstimate(id, patch) { setEstimates(prev => prev.map(r => (r.id === id ? { ...r, ...patch } : r))); }
-  function handleQueueAmountChange(id, value) { updateEstimate(id, { finalAmount: value }); }
-  function handleQueueAmountBlur(id) {
-    setEstimates(prev => prev.map(r => {
-      if (r.id !== id) return r;
-      const raw = String(r.finalAmount || '').replace(/[^0-9.\\-]/g, '');
-      const num = Number(raw);
-      return Number.isNaN(num) ? { ...r, finalAmount: '' } : { ...r, finalAmount: num.toLocaleString(undefined, { style: 'currency', currency: 'USD' }) };
-    }));
+  
+  async function handleQueueAmountChange(id, value) { 
+    try {
+      await updateFinalAmount(id, value);
+    } catch (err) {
+      console.error('Failed to update amount:', err);
+    }
   }
-  function handleQueueStatusChange(id, newStatus) {
-    if (newStatus === 'Done') {
-      setEstimates(prev => prev.map(r => (r.id === id ? finalizeAsDone(r) : r)));
-    } else {
-      updateEstimate(id, { status: newStatus });
+  
+  async function handleQueueAmountBlur(id) {
+    try {
+      const estimate = estimates.find(r => r.id === id);
+      if (!estimate) return;
+      
+      const raw = String(estimate.finalAmount || '').replace(/[^0-9.\\-]/g, '');
+      const num = Number(raw);
+      const formattedAmount = Number.isNaN(num) ? '' : num.toLocaleString(undefined, { style: 'currency', currency: 'USD' });
+      
+      await updateFinalAmount(id, formattedAmount);
+    } catch (err) {
+      console.error('Failed to format amount:', err);
+    }
+  }
+  
+  async function handleQueueStatusChange(id, newStatus) {
+    try {
+      await updateStatus(id, newStatus);
+    } catch (err) {
+      console.error('Failed to update status:', err);
     }
   }
 
@@ -342,13 +364,53 @@ export default function App() {
   const weeklyQueue = useMemo(() => estimates.filter(r => isWithinFilter(r.dateReturned, 'weekly', new Date(wqDate))), [estimates, wqDate]);
   const monthlyQueue = useMemo(() => estimates.filter(r => isWithinFilter(r.dateReturned, 'monthly', new Date(`${mqMonth}-01`))), [estimates, mqMonth]);
 
-  function seedSample() {
-    const today = new Date(); const y = toISODate(today);
+  async function seedSample() {
+    const today = new Date(); 
+    const y = toISODate(today);
     const samples = [
-      { id: cryptoRandomId(), estimateType: 'Initial', claimNumber:'1001', clientName:'Acme Co', taskNumber:'T-01', dateReceived:y, timeReceived:'09:00', dateReturned:y, timeReturned:'11:00', finalAmount:'', status:'Done', billed:null },
-      { id: cryptoRandomId(), estimateType: 'Final', claimNumber:'1002', clientName:'Globex',  taskNumber:'T-02', dateReceived:y, timeReceived:'10:00', dateReturned:y, timeReturned:'14:00', finalAmount:'$250.00', status:'Done', billed:false },
-      { id: cryptoRandomId(), estimateType: 'Final', claimNumber:'1003', clientName:'Initech', taskNumber:'T-03', dateReceived:y, timeReceived:'08:00', dateReturned:'', timeReturned:'', finalAmount:'$100.00', status:'In Progress', billed:false },
-    ]; setEstimates(samples);
+      { estimateType: 'Initial', claimNumber:'1001', clientName:'Acme Co', taskNumber:'T-01', dateReceived:y, timeReceived:'09:00', dateReturned:y, timeReturned:'11:00', finalAmount:'', status:'Done', billed:null },
+      { estimateType: 'Final', claimNumber:'1002', clientName:'Globex',  taskNumber:'T-02', dateReceived:y, timeReceived:'10:00', dateReturned:y, timeReturned:'14:00', finalAmount:'$250.00', status:'Done', billed:false },
+      { estimateType: 'Final', claimNumber:'1003', clientName:'Initech', taskNumber:'T-03', dateReceived:y, timeReceived:'08:00', dateReturned:'', timeReturned:'', finalAmount:'$100.00', status:'In Progress', billed:false },
+    ]; 
+    
+    try {
+      for (const sample of samples) {
+        await addEstimate(sample);
+      }
+    } catch (err) {
+      console.error('Failed to seed sample data:', err);
+    }
+  }
+
+  // Show loading state while data is being fetched
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white text-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sky-600 mx-auto"></div>
+          <p className="mt-4 text-slate-600">Loading estimates...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if there's an error
+  if (error) {
+    return (
+      <div className="min-h-screen bg-white text-slate-900 flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <div className="text-red-600 text-6xl mb-4">⚠️</div>
+          <h2 className="text-xl font-semibold text-slate-800 mb-2">Connection Error</h2>
+          <p className="text-slate-600 mb-4">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="bg-sky-600 text-white px-4 py-2 rounded-lg hover:bg-sky-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
   }
 
   if (showWelcome) return <Welcome onContinue={dismissWelcome} accentKey={accent} setAccent={setAccent} />;
@@ -489,6 +551,11 @@ export default function App() {
                 </div>
               </div>
 
+              {errors.submit && (
+                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-600">{errors.submit}</p>
+                </div>
+              )}
               <div className="mt-6 flex items-center justify-end">
                 <div className="flex gap-3">
                   <button type="button" onClick={() => { setForm({ estimateType: "Initial", claimNumber: "", clientName: "", taskNumber: "", dateReceived: "", timeReceived: "", dateReturned: "", timeReturned: "", finalAmount: "", status: "Not Started" }); setErrors({}); }} className={`h-11 rounded-2xl border border-slate-300/80 bg-white px-5 ${ACCENT.borderHover} focus:outline-none ${ACCENT.ring} transition-all duration-200 active:scale-95`}>Reset</button>
@@ -532,12 +599,12 @@ export default function App() {
                         </div>
                         <div className="flex items-center gap-2">
                           {item.estimateType === 'Final' && item.billed === false && (
-                            <button onClick={() => markBilled(item.id)} className={`h-8 rounded-lg border ${ACCENT.pillBorder} bg-white px-2 text-xs ${ACCENT.text} ${ACCENT.subtle} focus:outline-none ${ACCENT.ring}`}>Bill</button>
+                            <button onClick={() => handleMarkBilled(item.id)} className={`h-8 rounded-lg border ${ACCENT.pillBorder} bg-white px-2 text-xs ${ACCENT.text} ${ACCENT.subtle} focus:outline-none ${ACCENT.ring}`}>Bill</button>
                           )}
                           {item.status !== 'Done' && (
                             <button onClick={() => handleQueueStatusChange(item.id, 'Done')} className={`h-8 rounded-lg ${ACCENT.btn} px-2 text-xs text-white focus:outline-none ${ACCENT.ring}`}>Done</button>
                           )}
-                          <button onClick={() => deleteEstimate(item.id)} className="h-8 rounded-lg border border-slate-300/80 bg-white px-2 text-xs text-rose-700 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-rose-200">Delete</button>
+                          <button onClick={() => handleDeleteEstimate(item.id)} className="h-8 rounded-lg border border-slate-300/80 bg-white px-2 text-xs text-rose-700 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-rose-200">Delete</button>
                         </div>
                       </li>
                     ))}
@@ -561,12 +628,12 @@ export default function App() {
                         </div>
                         <div className="flex items-center gap-2">
                           {item.estimateType === 'Final' && item.billed === false && (
-                            <button onClick={() => markBilled(item.id)} className={`h-8 rounded-lg border ${ACCENT.pillBorder} bg-white px-2 text-xs ${ACCENT.text} ${ACCENT.subtle} focus:outline-none ${ACCENT.ring}`}>Bill</button>
+                            <button onClick={() => handleMarkBilled(item.id)} className={`h-8 rounded-lg border ${ACCENT.pillBorder} bg-white px-2 text-xs ${ACCENT.text} ${ACCENT.subtle} focus:outline-none ${ACCENT.ring}`}>Bill</button>
                           )}
                           {item.status !== 'Done' && (
                             <button onClick={() => handleQueueStatusChange(item.id, 'Done')} className={`h-8 rounded-lg ${ACCENT.btn} px-2 text-xs text-white focus:outline-none ${ACCENT.ring}`}>Done</button>
                           )}
-                          <button onClick={() => deleteEstimate(item.id)} className="h-8 rounded-lg border border-slate-300/80 bg-white px-2 text-xs text-rose-700 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-rose-200">Delete</button>
+                          <button onClick={() => handleDeleteEstimate(item.id)} className="h-8 rounded-lg border border-slate-300/80 bg-white px-2 text-xs text-rose-700 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-rose-200">Delete</button>
                         </div>
                       </li>
                     ))}
@@ -590,12 +657,12 @@ export default function App() {
                         </div>
                         <div className="flex items-center gap-2">
                           {item.estimateType === 'Final' && item.billed === false && (
-                            <button onClick={() => markBilled(item.id)} className={`h-8 rounded-lg border ${ACCENT.pillBorder} bg-white px-2 text-xs ${ACCENT.text} ${ACCENT.subtle} focus:outline-none ${ACCENT.ring}`}>Bill</button>
+                            <button onClick={() => handleMarkBilled(item.id)} className={`h-8 rounded-lg border ${ACCENT.pillBorder} bg-white px-2 text-xs ${ACCENT.text} ${ACCENT.subtle} focus:outline-none ${ACCENT.ring}`}>Bill</button>
                           )}
                           {item.status !== 'Done' && (
                             <button onClick={() => handleQueueStatusChange(item.id, 'Done')} className={`h-8 rounded-lg ${ACCENT.btn} px-2 text-xs text-white focus:outline-none ${ACCENT.ring}`}>Done</button>
                           )}
-                          <button onClick={() => deleteEstimate(item.id)} className="h-8 rounded-lg border border-slate-300/80 bg-white px-2 text-xs text-rose-700 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-rose-200">Delete</button>
+                          <button onClick={() => handleDeleteEstimate(item.id)} className="h-8 rounded-lg border border-slate-300/80 bg-white px-2 text-xs text-rose-700 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-rose-200">Delete</button>
                         </div>
                       </li>
                     ))}
@@ -620,8 +687,8 @@ export default function App() {
                         <p className="text-xs text-slate-500 truncate">Task {item.taskNumber} • Returned {fmtDateTime(item.dateReturned, item.timeReturned) || "—"}</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <button onClick={() => markBilled(item.id)} className={`h-9 rounded-xl border ${ACCENT.pillBorder} bg-white px-3 text-sm ${ACCENT.text} ${ACCENT.subtle} focus:outline-none ${ACCENT.ring} transition-all duration-200 active:scale-95`}>Mark billed</button>
-                        <button onClick={() => deleteEstimate(item.id)} className="h-9 rounded-xl border border-slate-300/80 bg-white px-3 text-sm text-rose-700 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-rose-200 transition-all duration-200 active:scale-95">Delete</button>
+                        <button onClick={() => handleMarkBilled(item.id)} className={`h-9 rounded-xl border ${ACCENT.pillBorder} bg-white px-3 text-sm ${ACCENT.text} ${ACCENT.subtle} focus:outline-none ${ACCENT.ring} transition-all duration-200 active:scale-95`}>Mark billed</button>
+                        <button onClick={() => handleDeleteEstimate(item.id)} className="h-9 rounded-xl border border-slate-300/80 bg-white px-3 text-sm text-rose-700 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-rose-200 transition-all duration-200 active:scale-95">Delete</button>
                       </div>
                     </li>
                   ))}
@@ -668,8 +735,8 @@ export default function App() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <button onClick={() => deleteEstimate(item.id)} className="h-9 rounded-xl border border-slate-300/80 bg-white px-3 text-sm text-rose-700 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-rose-200 transition-all duration-200 active:scale-95">Delete</button>
-                        <button onClick={() => updateEstimate(item.id, { status: 'In Progress' })} className={`h-9 rounded-xl border ${ACCENT.pillBorder} bg-white px-3 text-sm ${ACCENT.text} ${ACCENT.subtle} focus:outline-none ${ACCENT.ring} transition-all duration-200 active:scale-95`}>Set In Progress</button>
+                        <button onClick={() => handleDeleteEstimate(item.id)} className="h-9 rounded-xl border border-slate-300/80 bg-white px-3 text-sm text-rose-700 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-rose-200 transition-all duration-200 active:scale-95">Delete</button>
+                        <button onClick={() => handleQueueStatusChange(item.id, 'In Progress')} className={`h-9 rounded-xl border ${ACCENT.pillBorder} bg-white px-3 text-sm ${ACCENT.text} ${ACCENT.subtle} focus:outline-none ${ACCENT.ring} transition-all duration-200 active:scale-95`}>Set In Progress</button>
                       </div>
                     </li>
                   ))}
