@@ -597,14 +597,14 @@ export default function App() {
                           <p className="text-sm font-medium truncate text-slate-800">{item.clientName} • #{item.claimNumber}</p>
                           <p className="text-xs text-slate-500 truncate">Type {item.estimateType} • Returned {fmtDateTime(item.dateReturned, item.timeReturned) || "—"}</p>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-1 sm:gap-2">
                           {item.estimateType === 'Final' && item.billed === false && (
-                            <button onClick={() => handleMarkBilled(item.id)} className={`h-8 rounded-lg border ${ACCENT.pillBorder} bg-white px-2 text-xs ${ACCENT.text} ${ACCENT.subtle} focus:outline-none ${ACCENT.ring}`}>Bill</button>
+                            <button onClick={() => handleMarkBilled(item.id)} className={`h-8 rounded-lg border ${ACCENT.pillBorder} bg-white px-2 text-xs ${ACCENT.text} ${ACCENT.subtle} focus:outline-none ${ACCENT.ring} whitespace-nowrap`}>Bill</button>
                           )}
                           {item.status !== 'Done' && (
-                            <button onClick={() => handleQueueStatusChange(item.id, 'Done')} className={`h-8 rounded-lg ${ACCENT.btn} px-2 text-xs text-white focus:outline-none ${ACCENT.ring}`}>Done</button>
+                            <button onClick={() => handleQueueStatusChange(item.id, 'Done')} className={`h-8 rounded-lg ${ACCENT.btn} px-2 text-xs text-white focus:outline-none ${ACCENT.ring} whitespace-nowrap`}>Done</button>
                           )}
-                          <button onClick={() => handleDeleteEstimate(item.id)} className="h-8 rounded-lg border border-slate-300/80 bg-white px-2 text-xs text-rose-700 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-rose-200">Delete</button>
+                          <button onClick={() => handleDeleteEstimate(item.id)} className="h-8 rounded-lg border border-slate-300/80 bg-white px-2 text-xs text-rose-700 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-rose-200 whitespace-nowrap">Delete</button>
                         </div>
                       </li>
                     ))}
@@ -626,14 +626,14 @@ export default function App() {
                           <p className="text-sm font-medium truncate text-slate-800">{item.clientName} • #{item.claimNumber}</p>
                           <p className="text-xs text-slate-500 truncate">Type {item.estimateType} • Returned {fmtDateTime(item.dateReturned, item.timeReturned) || "—"}</p>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-1 sm:gap-2">
                           {item.estimateType === 'Final' && item.billed === false && (
-                            <button onClick={() => handleMarkBilled(item.id)} className={`h-8 rounded-lg border ${ACCENT.pillBorder} bg-white px-2 text-xs ${ACCENT.text} ${ACCENT.subtle} focus:outline-none ${ACCENT.ring}`}>Bill</button>
+                            <button onClick={() => handleMarkBilled(item.id)} className={`h-8 rounded-lg border ${ACCENT.pillBorder} bg-white px-2 text-xs ${ACCENT.text} ${ACCENT.subtle} focus:outline-none ${ACCENT.ring} whitespace-nowrap`}>Bill</button>
                           )}
                           {item.status !== 'Done' && (
-                            <button onClick={() => handleQueueStatusChange(item.id, 'Done')} className={`h-8 rounded-lg ${ACCENT.btn} px-2 text-xs text-white focus:outline-none ${ACCENT.ring}`}>Done</button>
+                            <button onClick={() => handleQueueStatusChange(item.id, 'Done')} className={`h-8 rounded-lg ${ACCENT.btn} px-2 text-xs text-white focus:outline-none ${ACCENT.ring} whitespace-nowrap`}>Done</button>
                           )}
-                          <button onClick={() => handleDeleteEstimate(item.id)} className="h-8 rounded-lg border border-slate-300/80 bg-white px-2 text-xs text-rose-700 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-rose-200">Delete</button>
+                          <button onClick={() => handleDeleteEstimate(item.id)} className="h-8 rounded-lg border border-slate-300/80 bg-white px-2 text-xs text-rose-700 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-rose-200 whitespace-nowrap">Delete</button>
                         </div>
                       </li>
                     ))}
@@ -655,14 +655,14 @@ export default function App() {
                           <p className="text-sm font-medium truncate text-slate-800">{item.clientName} • #{item.claimNumber}</p>
                           <p className="text-xs text-slate-500 truncate">Type {item.estimateType} • Returned {fmtDateTime(item.dateReturned, item.timeReturned) || "—"}</p>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-1 sm:gap-2">
                           {item.estimateType === 'Final' && item.billed === false && (
-                            <button onClick={() => handleMarkBilled(item.id)} className={`h-8 rounded-lg border ${ACCENT.pillBorder} bg-white px-2 text-xs ${ACCENT.text} ${ACCENT.subtle} focus:outline-none ${ACCENT.ring}`}>Bill</button>
+                            <button onClick={() => handleMarkBilled(item.id)} className={`h-8 rounded-lg border ${ACCENT.pillBorder} bg-white px-2 text-xs ${ACCENT.text} ${ACCENT.subtle} focus:outline-none ${ACCENT.ring} whitespace-nowrap`}>Bill</button>
                           )}
                           {item.status !== 'Done' && (
-                            <button onClick={() => handleQueueStatusChange(item.id, 'Done')} className={`h-8 rounded-lg ${ACCENT.btn} px-2 text-xs text-white focus:outline-none ${ACCENT.ring}`}>Done</button>
+                            <button onClick={() => handleQueueStatusChange(item.id, 'Done')} className={`h-8 rounded-lg ${ACCENT.btn} px-2 text-xs text-white focus:outline-none ${ACCENT.ring} whitespace-nowrap`}>Done</button>
                           )}
-                          <button onClick={() => handleDeleteEstimate(item.id)} className="h-8 rounded-lg border border-slate-300/80 bg-white px-2 text-xs text-rose-700 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-rose-200">Delete</button>
+                          <button onClick={() => handleDeleteEstimate(item.id)} className="h-8 rounded-lg border border-slate-300/80 bg-white px-2 text-xs text-rose-700 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-rose-200 whitespace-nowrap">Delete</button>
                         </div>
                       </li>
                     ))}
@@ -687,8 +687,8 @@ export default function App() {
                         <p className="text-xs text-slate-500 truncate">Task {item.taskNumber} • Returned {fmtDateTime(item.dateReturned, item.timeReturned) || "—"}</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <button onClick={() => handleMarkBilled(item.id)} className={`h-9 rounded-xl border ${ACCENT.pillBorder} bg-white px-3 text-sm ${ACCENT.text} ${ACCENT.subtle} focus:outline-none ${ACCENT.ring} transition-all duration-200 active:scale-95`}>Mark billed</button>
-                        <button onClick={() => handleDeleteEstimate(item.id)} className="h-9 rounded-xl border border-slate-300/80 bg-white px-3 text-sm text-rose-700 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-rose-200 transition-all duration-200 active:scale-95">Delete</button>
+                        <button onClick={() => handleMarkBilled(item.id)} className={`h-9 rounded-xl border ${ACCENT.pillBorder} bg-white px-3 text-sm ${ACCENT.text} ${ACCENT.subtle} focus:outline-none ${ACCENT.ring} transition-all duration-200 active:scale-95 whitespace-nowrap`}>Mark billed</button>
+                        <button onClick={() => handleDeleteEstimate(item.id)} className="h-9 rounded-xl border border-slate-300/80 bg-white px-3 text-sm text-rose-700 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-rose-200 transition-all duration-200 active:scale-95 whitespace-nowrap">Delete</button>
                       </div>
                     </li>
                   ))}
@@ -734,9 +734,9 @@ export default function App() {
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => handleDeleteEstimate(item.id)} className="h-9 rounded-xl border border-slate-300/80 bg-white px-3 text-sm text-rose-700 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-rose-200 transition-all duration-200 active:scale-95">Delete</button>
-                        <button onClick={() => handleQueueStatusChange(item.id, 'In Progress')} className={`h-9 rounded-xl border ${ACCENT.pillBorder} bg-white px-3 text-sm ${ACCENT.text} ${ACCENT.subtle} focus:outline-none ${ACCENT.ring} transition-all duration-200 active:scale-95`}>Set In Progress</button>
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                        <button onClick={() => handleDeleteEstimate(item.id)} className="h-9 rounded-xl border border-slate-300/80 bg-white px-3 text-sm text-rose-700 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-rose-200 transition-all duration-200 active:scale-95 whitespace-nowrap">Delete</button>
+                        <button onClick={() => handleQueueStatusChange(item.id, 'In Progress')} className={`h-9 rounded-xl border ${ACCENT.pillBorder} bg-white px-3 text-sm ${ACCENT.text} ${ACCENT.subtle} focus:outline-none ${ACCENT.ring} transition-all duration-200 active:scale-95 whitespace-nowrap`}>Set In Progress</button>
                       </div>
                     </li>
                   ))}
